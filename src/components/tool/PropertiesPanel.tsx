@@ -24,7 +24,7 @@ import {
 } from '@/lib/floorplan/types';
 
 interface PropertiesPanelProps {
-  selectedObject: FloorplanObject | null;
+  selectedObject: FloorplanObject | null | undefined;
   onUpdate: (id: string, updates: Partial<FloorplanObject>) => void;
 }
 

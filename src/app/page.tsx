@@ -1,4 +1,6 @@
 // src/app/page.tsx
+'use client';
+
 import { Container, Title, Text, Button, Stack, Card, Grid, List } from '@mantine/core';
 import Link from 'next/link';
 import { MainAppShell } from '@/components/layout/MainAppShell';

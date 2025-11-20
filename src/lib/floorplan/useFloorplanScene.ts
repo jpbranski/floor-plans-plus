@@ -166,7 +166,7 @@ export function useFloorplanScene() {
     (id: string, updates: Partial<FloorplanObject>) => {
       updateScene((prev) => ({
         ...prev,
-        objects: prev.objects.map((obj) => (obj.id === id ? { ...obj, ...updates } : obj)),
+        objects: prev.objects.map((obj) => (obj.id === id ? { ...obj, ...updates } as FloorplanObject : obj)),
       }));
     },
     [updateScene]
