@@ -5,8 +5,8 @@ import { useRef, useState, useEffect, useCallback } from 'react';
 import { Box, Grid, Stack, ScrollArea, Divider, Modal, Text, List } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import Konva from 'konva';
+import dynamic from 'next/dynamic';
 import { MainAppShell } from '@/components/layout/MainAppShell';
-import { CanvasStage } from '@/components/tool/CanvasStage';
 import { Toolbar } from '@/components/tool/Toolbar';
 import { LayersPanel } from '@/components/tool/LayersPanel';
 import { PropertiesPanel } from '@/components/tool/PropertiesPanel';
@@ -22,6 +22,11 @@ import {
   MAX_ZOOM,
   ZOOM_STEP,
 } from '@/lib/floorplan/types';
+
+// Dynamically import CanvasStage with SSR disabled to prevent Konva SSR errors
+const CanvasStage = dynamic(() => import('@/components/tool/CanvasStage').then(mod => ({ default: mod.CanvasStage })), {
+  ssr: false,
+});
 
 export default function ToolPage() {
   const stageRef = useRef<Konva.Stage>(null);

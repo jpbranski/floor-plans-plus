@@ -71,7 +71,6 @@ export const theme: MantineThemeOverride = createTheme({
 
   // Font family
   fontFamily: 'Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-  headingFontFamily: 'Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
 
   // Font sizes
   fontSizes: {
@@ -158,11 +157,6 @@ export const theme: MantineThemeOverride = createTheme({
         },
       },
     },
-  },
-
-  // Active styles
-  activeStyles: {
-    transform: 'scale(0.98)',
   },
 
   // Focus ring
