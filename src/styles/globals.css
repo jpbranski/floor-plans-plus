@@ -1,0 +1,98 @@
+/* Global CSS for Floorplan Studio */
+
+/* Reset and base styles */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-color: #F7F3EF; /* Cream background */
+  color: #2F2A28; /* Charcoal text */
+}
+
+/* Focus visible styles for accessibility */
+*:focus-visible {
+  outline: 2px solid #A59386; /* Taupe */
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Canvas container to prevent overflow */
+.canvas-container {
+  position: relative;
+  overflow: hidden;
+  background-color: #FFFFFF;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(47, 42, 40, 0.08);
+}
+
+/* Scale bar styling */
+.scale-bar {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  background-color: rgba(255, 255, 255, 0.95);
+  border: 2px solid #2F2A28;
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  z-index: 10;
+  pointer-events: none;
+  box-shadow: 0 2px 4px rgba(47, 42, 40, 0.12);
+}
+
+.scale-bar-line {
+  width: 100px;
+  height: 2px;
+  background-color: #2F2A28;
+  margin-top: 4px;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Selection styles */
+::selection {
+  background-color: #C9A4C9; /* Mauve */
+  color: #FFFFFF;
+}
+
+/* Remove default button styles when needed */
+button {
+  font-family: inherit;
+}
+
+/* Utility classes */
+.text-center {
+  text-align: center;
+}
+
+.hidden {
+  display: none;
+}
+
+/* Print styles */
+@media print {
+  body {
+    background-color: white;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+}

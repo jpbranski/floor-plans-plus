@@ -1,0 +1,31 @@
+{
+  "name": "floorplan-studio",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@mantine/core": "^7.13.2",
+    "@mantine/hooks": "^7.13.2",
+    "@mantine/notifications": "^7.13.2",
+    "@emotion/react": "^11.13.3",
+    "@emotion/styled": "^11.13.0",
+    "@tabler/icons-react": "^3.19.0",
+    "konva": "^9.3.14",
+    "react-konva": "^18.2.10",
+    "jspdf": "^2.5.2",
+    "next": "^14.2.18",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "typescript": "^5"
+  }
+}
