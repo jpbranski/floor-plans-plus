@@ -10,10 +10,12 @@ import {
   FurnitureObject,
   TextObject,
   FurnitureType,
+  GridConfig,
   DEFAULT_WALL,
   DEFAULT_DOOR,
   FURNITURE_DEFAULTS,
   DEFAULT_TEXT,
+  DEFAULT_GRID,
 } from './types';
 import { generateId, generatePrefixedId } from '@/utils/id';
 import { UndoManager } from '../undo/UndoManager';
@@ -28,6 +30,7 @@ function createEmptyScene(): FloorplanScene {
     id: generateId(),
     name: 'Untitled Floorplan',
     objects: [],
+    grid: { ...DEFAULT_GRID },
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
@@ -90,7 +93,7 @@ export function useFloorplanScene() {
    * Add a door to the scene
    */
   const addDoor = useCallback(
-    (x: number, y: number) => {
+    (x: number, y: number, width?: number, height?: number) => {
       updateScene((prev) => {
         const doorCount = prev.objects.filter((obj) => obj.type === 'door').length;
         const newDoor: DoorObject = {
@@ -99,6 +102,8 @@ export function useFloorplanScene() {
           name: `Door ${doorCount + 1}`,
           x,
           y,
+          ...(width && { width }),
+          ...(height && { height }),
         };
         return {
           ...prev,
@@ -293,6 +298,19 @@ export function useFloorplanScene() {
   }, []);
 
   /**
+   * Update grid configuration
+   */
+  const updateGrid = useCallback(
+    (updates: Partial<GridConfig>) => {
+      updateScene((prev) => ({
+        ...prev,
+        grid: { ...prev.grid, ...updates },
+      }));
+    },
+    [updateScene]
+  );
+
+  /**
    * Get selected object
    */
   const selectedObject = selectedId
@@ -312,6 +330,7 @@ export function useFloorplanScene() {
     deleteObject,
     deleteSelected,
     reorderObjects,
+    updateGrid,
     undo,
     redo,
     canUndo,

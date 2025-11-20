@@ -88,12 +88,22 @@ export interface ViewportState {
 }
 
 /**
+ * Grid configuration (Option A: 1 unit = 1 grid square)
+ */
+export interface GridConfig {
+  enabled: boolean;
+  size: number; // pixels per grid square (default 40)
+  opacity: number; // 0-1 (default 0.25)
+}
+
+/**
  * Complete floorplan scene
  */
 export interface FloorplanScene {
   id: string;
   name: string;
   objects: FloorplanObject[];
+  grid: GridConfig;
   createdAt: string;
   updatedAt: string;
 }
@@ -210,3 +220,41 @@ export const DEFAULT_VIEWPORT: ViewportState = {
 export const MIN_ZOOM = 0.3;
 export const MAX_ZOOM = 3.0;
 export const ZOOM_STEP = 0.1;
+
+/**
+ * Grid constraints
+ */
+export const MIN_GRID_SIZE = 20;
+export const MAX_GRID_SIZE = 80;
+export const DEFAULT_GRID_SIZE = 40;
+export const DEFAULT_GRID_OPACITY = 0.25;
+
+/**
+ * Default grid configuration
+ */
+export const DEFAULT_GRID: GridConfig = {
+  enabled: true,
+  size: DEFAULT_GRID_SIZE,
+  opacity: DEFAULT_GRID_OPACITY,
+};
+
+/**
+ * Base-4 pixel snapping
+ */
+export function snapToBase4(value: number): number {
+  return Math.round(value / 4) * 4;
+}
+
+/**
+ * Convert pixels to grid units
+ */
+export function pxToUnits(px: number, gridSize: number): number {
+  return Math.round(px / gridSize);
+}
+
+/**
+ * Convert grid units to pixels with base-4 snapping
+ */
+export function unitsToPx(units: number, gridSize: number): number {
+  return snapToBase4(units * gridSize);
+}

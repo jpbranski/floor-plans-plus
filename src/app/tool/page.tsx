@@ -12,6 +12,7 @@ import { LayersPanel } from '@/components/tool/LayersPanel';
 import { PropertiesPanel } from '@/components/tool/PropertiesPanel';
 import { ExportPanel } from '@/components/tool/ExportPanel';
 import { CommandPalette } from '@/components/tool/CommandPalette';
+import { EditSizeModal } from '@/components/tool/EditSizeModal';
 import { useFloorplanScene } from '@/lib/floorplan/useFloorplanScene';
 import {
   ToolType,
@@ -35,6 +36,7 @@ export default function ToolPage() {
   const [viewport, setViewport] = useState<ViewportState>(DEFAULT_VIEWPORT);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [helpModalOpen, setHelpModalOpen] = useState(false);
+  const [editSizeModalOpen, setEditSizeModalOpen] = useState(false);
 
   // Use the floorplan scene hook
   const {
@@ -50,6 +52,7 @@ export default function ToolPage() {
     deleteObject,
     deleteSelected,
     reorderObjects,
+    updateGrid,
     undo,
     redo,
     canUndo,
@@ -179,11 +182,41 @@ export default function ToolPage() {
         return;
       }
 
-      // Tool shortcuts
+      // Grid and edit shortcuts (only when not typing)
       if (
         document.activeElement?.tagName !== 'INPUT' &&
         document.activeElement?.tagName !== 'TEXTAREA'
       ) {
+        // Toggle grid (G)
+        if (e.key.toLowerCase() === 'g' && !e.shiftKey) {
+          e.preventDefault();
+          updateGrid({ enabled: !scene.grid.enabled });
+          return;
+        }
+
+        // Edit Size modal (Shift+G)
+        if (e.key.toLowerCase() === 'g' && e.shiftKey) {
+          e.preventDefault();
+          if (selectedId) {
+            setEditSizeModalOpen(true);
+          }
+          return;
+        }
+
+        // Grid opacity shortcuts
+        if (e.key === '+' || e.key === '=') {
+          e.preventDefault();
+          updateGrid({ opacity: Math.min(1, scene.grid.opacity + 0.1) });
+          return;
+        }
+
+        if (e.key === '-' || e.key === '_') {
+          e.preventDefault();
+          updateGrid({ opacity: Math.max(0, scene.grid.opacity - 0.1) });
+          return;
+        }
+
+        // Tool shortcuts
         switch (e.key.toLowerCase()) {
           case 'v':
             setCurrentTool('select');
@@ -206,7 +239,7 @@ export default function ToolPage() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleSave, undo, redo, deleteSelected]);
+  }, [handleSave, undo, redo, deleteSelected, scene.grid, updateGrid, selectedId]);
 
   // Toggle object visibility
   const handleToggleVisibility = useCallback(
@@ -241,6 +274,8 @@ export default function ToolPage() {
               onToolChange={setCurrentTool}
               selectedFurniture={selectedFurniture}
               onFurnitureChange={setSelectedFurniture}
+              grid={scene.grid}
+              onGridChange={updateGrid}
               onZoomIn={handleZoomIn}
               onZoomOut={handleZoomOut}
               onZoomReset={handleZoomReset}
@@ -252,6 +287,8 @@ export default function ToolPage() {
               onLoad={handleLoad}
               onNew={handleNew}
               onHelp={() => setHelpModalOpen(true)}
+              onEditSize={() => setEditSizeModalOpen(true)}
+              hasSelection={!!selectedId}
             />
           </Grid.Col>
 
@@ -267,6 +304,8 @@ export default function ToolPage() {
                 tool={currentTool}
                 viewport={viewport}
                 onViewportChange={setViewport}
+                grid={scene.grid}
+                selectedFurniture={selectedFurniture}
                 onAddWall={addWall}
                 onAddDoor={addDoor}
                 onAddFurniture={handleAddFurniture}
@@ -329,6 +368,15 @@ export default function ToolPage() {
         }}
       />
 
+      {/* Edit Size Modal */}
+      <EditSizeModal
+        opened={editSizeModalOpen}
+        onClose={() => setEditSizeModalOpen(false)}
+        object={selectedObject || null}
+        gridSize={scene.grid.size}
+        onUpdate={updateObject}
+      />
+
       {/* Help Modal */}
       <Modal
         opened={helpModalOpen}
@@ -360,6 +408,15 @@ export default function ToolPage() {
               </List.Item>
               <List.Item>
                 <strong>Spacebar</strong> (hold) - Pan mode
+              </List.Item>
+              <List.Item>
+                <strong>G</strong> - Toggle grid
+              </List.Item>
+              <List.Item>
+                <strong>Shift+G</strong> - Edit size (for selected object)
+              </List.Item>
+              <List.Item>
+                <strong>+/-</strong> - Adjust grid opacity
               </List.Item>
             </List>
           </div>

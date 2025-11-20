@@ -1,14 +1,16 @@
 // src/components/tool/Toolbar.tsx
 'use client';
 
-import { Stack, Button, Divider, Text, Select, Tooltip, ActionIcon, Group } from '@mantine/core';
-import { ToolType, FurnitureType } from '@/lib/floorplan/types';
+import { Stack, Button, Divider, Text, Select, Tooltip, ActionIcon, Group, Switch, Slider } from '@mantine/core';
+import { ToolType, FurnitureType, GridConfig } from '@/lib/floorplan/types';
 
 interface ToolbarProps {
   currentTool: ToolType;
   onToolChange: (tool: ToolType) => void;
   selectedFurniture: FurnitureType;
   onFurnitureChange: (type: FurnitureType) => void;
+  grid: GridConfig;
+  onGridChange: (updates: Partial<GridConfig>) => void;
   onZoomIn: () => void;
   onZoomOut: () => void;
   onZoomReset: () => void;
@@ -20,6 +22,8 @@ interface ToolbarProps {
   onLoad: () => void;
   onNew: () => void;
   onHelp: () => void;
+  onEditSize: () => void;
+  hasSelection: boolean;
 }
 
 export function Toolbar({
@@ -27,6 +31,8 @@ export function Toolbar({
   onToolChange,
   selectedFurniture,
   onFurnitureChange,
+  grid,
+  onGridChange,
   onZoomIn,
   onZoomOut,
   onZoomReset,
@@ -38,6 +44,8 @@ export function Toolbar({
   onLoad,
   onNew,
   onHelp,
+  onEditSize,
+  hasSelection,
 }: ToolbarProps) {
   const tools: { value: ToolType; label: string; description: string; shortcut: string }[] = [
     { value: 'select', label: 'Select', description: 'Select and move objects', shortcut: 'V' },
@@ -104,6 +112,85 @@ export function Toolbar({
           />
         </div>
       )}
+
+      <Divider />
+
+      {/* Grid controls */}
+      <div>
+        <Text size="sm" fw={600} mb="xs" style={{ color: '#2F2A28' }}>
+          Grid
+        </Text>
+        <Stack gap="sm">
+          <Tooltip label="Toggle grid (G)" position="right">
+            <Switch
+              label="Show Grid"
+              checked={grid.enabled}
+              onChange={(e) => onGridChange({ enabled: e.currentTarget.checked })}
+              size="sm"
+            />
+          </Tooltip>
+
+          <div>
+            <Text size="xs" mb={4} style={{ color: '#5E5753' }}>
+              Grid Size: {grid.size}px
+            </Text>
+            <Slider
+              value={grid.size}
+              onChange={(value) => onGridChange({ size: value })}
+              min={20}
+              max={80}
+              step={4}
+              size="xs"
+              marks={[
+                { value: 20, label: '20' },
+                { value: 40, label: '40' },
+                { value: 60, label: '60' },
+                { value: 80, label: '80' },
+              ]}
+            />
+          </div>
+
+          <div>
+            <Text size="xs" mb={4} style={{ color: '#5E5753' }}>
+              Grid Opacity: {(grid.opacity * 100).toFixed(0)}%
+            </Text>
+            <Slider
+              value={grid.opacity}
+              onChange={(value) => onGridChange({ opacity: value })}
+              min={0}
+              max={1}
+              step={0.05}
+              size="xs"
+              marks={[
+                { value: 0, label: '0%' },
+                { value: 0.5, label: '50%' },
+                { value: 1, label: '100%' },
+              ]}
+            />
+          </div>
+        </Stack>
+      </div>
+
+      <Divider />
+
+      {/* Edit controls */}
+      <div>
+        <Text size="sm" fw={600} mb="xs" style={{ color: '#2F2A28' }}>
+          Edit
+        </Text>
+        <Tooltip label="Edit size in units (Shift+G)" position="right">
+          <Button
+            variant="light"
+            color="taupe"
+            size="sm"
+            fullWidth
+            onClick={onEditSize}
+            disabled={!hasSelection}
+          >
+            Edit Size…
+          </Button>
+        </Tooltip>
+      </div>
 
       <Divider />
 
