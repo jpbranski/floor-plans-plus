@@ -1,5 +1,5 @@
 // src/components/tool/CanvasStage.tsx
-'use client';
+"use client";
 
 import { useRef, useEffect, useState, forwardRef } from 'react';
 import { Stage, Layer, Rect, Text, Group, Arc, Transformer } from 'react-konva';
@@ -11,10 +11,26 @@ import {
   FurnitureObject,
   TextObject,
   ToolType,
+  FurnitureType,
   ViewportState,
+  GridConfig,
   MIN_ZOOM,
   MAX_ZOOM,
+  pxToUnits,
+  unitsToPx,
+  snapToBase4,
 } from '@/lib/floorplan/types';
+import { GridLayer } from './GridLayer';
+
+interface PreviewObject {
+  type: 'wall' | 'door' | 'furniture';
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  rotation: number;
+  furnitureType?: FurnitureType;
+}
 
 interface CanvasStageProps {
   objects: FloorplanObject[];
@@ -24,8 +40,10 @@ interface CanvasStageProps {
   tool: ToolType;
   viewport: ViewportState;
   onViewportChange: (viewport: ViewportState) => void;
+  grid: GridConfig;
+  selectedFurniture?: FurnitureType;
   onAddWall?: (x: number, y: number, width: number, height: number) => void;
-  onAddDoor?: (x: number, y: number) => void;
+  onAddDoor?: (x: number, y: number, width: number, height: number) => void;
   onAddFurniture?: (x: number, y: number) => void;
   onAddText?: (x: number, y: number) => void;
 }
@@ -40,6 +58,8 @@ export const CanvasStage = forwardRef<Konva.Stage, CanvasStageProps>(
       tool,
       viewport,
       onViewportChange,
+      grid,
+      selectedFurniture = 'bed',
       onAddWall,
       onAddDoor,
       onAddFurniture,
@@ -51,8 +71,11 @@ export const CanvasStage = forwardRef<Konva.Stage, CanvasStageProps>(
     const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
     const transformerRef = useRef<Konva.Transformer>(null);
     const [isPanning, setIsPanning] = useState(false);
-    const [isDrawingWall, setIsDrawingWall] = useState(false);
-    const [wallStart, setWallStart] = useState<{ x: number; y: number } | null>(null);
+
+    // Preview state for drawing
+    const [isDrawing, setIsDrawing] = useState(false);
+    const [drawStart, setDrawStart] = useState<{ x: number; y: number } | null>(null);
+    const [previewObject, setPreviewObject] = useState<PreviewObject | null>(null);
 
     // Measure container dimensions
     useEffect(() => {
@@ -123,6 +146,14 @@ export const CanvasStage = forwardRef<Konva.Stage, CanvasStageProps>(
       });
     };
 
+    // Convert screen position to canvas position
+    const screenToCanvas = (stage: Konva.Stage, screenX: number, screenY: number) => {
+      return {
+        x: (screenX - viewport.x) / viewport.scale,
+        y: (screenY - viewport.y) / viewport.scale,
+      };
+    };
+
     // Handle mouse down
     const handleMouseDown = (e: Konva.KonvaEventObject<MouseEvent>) => {
       const stage = e.target.getStage();
@@ -131,7 +162,7 @@ export const CanvasStage = forwardRef<Konva.Stage, CanvasStageProps>(
       // Check if clicked on empty area
       const clickedOnEmpty = e.target === stage;
 
-      // Pan tool or spacebar held
+      // Pan tool or middle mouse button
       if (tool === 'pan' || e.evt.button === 1) {
         setIsPanning(true);
         stage.container().style.cursor = 'grabbing';
@@ -141,53 +172,57 @@ export const CanvasStage = forwardRef<Konva.Stage, CanvasStageProps>(
       if (clickedOnEmpty) {
         onSelect(null);
 
+        const pointer = stage.getPointerPosition();
+        if (!pointer) return;
+
+        const pos = screenToCanvas(stage, pointer.x, pointer.y);
+
         // Start drawing wall
-        if (tool === 'wall' && onAddWall) {
-          const pointer = stage.getPointerPosition();
-          if (pointer) {
-            const pos = {
-              x: (pointer.x - viewport.x) / viewport.scale,
-              y: (pointer.y - viewport.y) / viewport.scale,
-            };
-            setIsDrawingWall(true);
-            setWallStart(pos);
-          }
+        if (tool === 'wall') {
+          setIsDrawing(true);
+          setDrawStart(pos);
+          setPreviewObject({
+            type: 'wall',
+            x: pos.x,
+            y: pos.y,
+            width: 0,
+            height: 0,
+            rotation: 0,
+          });
         }
 
-        // Place door
-        if (tool === 'door' && onAddDoor) {
-          const pointer = stage.getPointerPosition();
-          if (pointer) {
-            const pos = {
-              x: (pointer.x - viewport.x) / viewport.scale,
-              y: (pointer.y - viewport.y) / viewport.scale,
-            };
-            onAddDoor(pos.x, pos.y);
-          }
+        // Start drawing door
+        if (tool === 'door') {
+          setIsDrawing(true);
+          setDrawStart(pos);
+          setPreviewObject({
+            type: 'door',
+            x: pos.x,
+            y: pos.y,
+            width: 0,
+            height: 0,
+            rotation: 0,
+          });
         }
 
-        // Place furniture
-        if (tool === 'furniture' && onAddFurniture) {
-          const pointer = stage.getPointerPosition();
-          if (pointer) {
-            const pos = {
-              x: (pointer.x - viewport.x) / viewport.scale,
-              y: (pointer.y - viewport.y) / viewport.scale,
-            };
-            onAddFurniture(pos.x, pos.y);
-          }
+        // Start drawing furniture
+        if (tool === 'furniture') {
+          setIsDrawing(true);
+          setDrawStart(pos);
+          setPreviewObject({
+            type: 'furniture',
+            x: pos.x,
+            y: pos.y,
+            width: 0,
+            height: 0,
+            rotation: 0,
+            furnitureType: selectedFurniture,
+          });
         }
 
         // Place text
         if (tool === 'text' && onAddText) {
-          const pointer = stage.getPointerPosition();
-          if (pointer) {
-            const pos = {
-              x: (pointer.x - viewport.x) / viewport.scale,
-              y: (pointer.y - viewport.y) / viewport.scale,
-            };
-            onAddText(pos.x, pos.y);
-          }
+          onAddText(pos.x, pos.y);
         }
       }
     };
@@ -203,6 +238,25 @@ export const CanvasStage = forwardRef<Konva.Stage, CanvasStageProps>(
           y: viewport.y + e.evt.movementY,
         };
         onViewportChange({ ...viewport, ...newPos });
+        return;
+      }
+
+      // Update preview while drawing
+      if (isDrawing && drawStart && previewObject) {
+        const pointer = stage.getPointerPosition();
+        if (!pointer) return;
+
+        const currentPos = screenToCanvas(stage, pointer.x, pointer.y);
+        const dx = currentPos.x - drawStart.x;
+        const dy = currentPos.y - drawStart.y;
+
+        setPreviewObject({
+          ...previewObject,
+          x: Math.min(drawStart.x, currentPos.x),
+          y: Math.min(drawStart.y, currentPos.y),
+          width: Math.abs(dx),
+          height: Math.abs(dy),
+        });
       }
     };
 
@@ -216,28 +270,95 @@ export const CanvasStage = forwardRef<Konva.Stage, CanvasStageProps>(
         stage.container().style.cursor = 'default';
       }
 
-      // Finish drawing wall
-      if (isDrawingWall && wallStart && onAddWall) {
+      // Finish drawing
+      if (isDrawing && drawStart && previewObject) {
         const pointer = stage.getPointerPosition();
         if (pointer) {
-          const endPos = {
-            x: (pointer.x - viewport.x) / viewport.scale,
-            y: (pointer.y - viewport.y) / viewport.scale,
-          };
+          const currentPos = screenToCanvas(stage, pointer.x, pointer.y);
 
-          const width = Math.abs(endPos.x - wallStart.x);
-          const height = Math.abs(endPos.y - wallStart.y);
+          const rawWidth = Math.abs(currentPos.x - drawStart.x);
+          const rawHeight = Math.abs(currentPos.y - drawStart.y);
 
-          // Only create wall if it has some size
-          if (width > 10 || height > 10) {
-            const x = Math.min(wallStart.x, endPos.x);
-            const y = Math.min(wallStart.y, endPos.y);
-            onAddWall(x, y, width, height);
+          const x = Math.min(drawStart.x, currentPos.x);
+          const y = Math.min(drawStart.y, currentPos.y);
+
+          // Convert to units and back to pixels with snapping
+          const widthUnits = pxToUnits(rawWidth, grid.size);
+          const heightUnits = pxToUnits(rawHeight, grid.size);
+          const width = unitsToPx(widthUnits, grid.size);
+          const height = unitsToPx(heightUnits, grid.size);
+
+          // Only create object if it has some size
+          if (widthUnits > 0 && heightUnits > 0) {
+            if (previewObject.type === 'wall' && onAddWall) {
+              onAddWall(x, y, width, height);
+            } else if (previewObject.type === 'door' && onAddDoor) {
+              onAddDoor(x, y, width, height);
+            } else if (previewObject.type === 'furniture' && onAddFurniture) {
+              onAddFurniture(x, y);
+            }
           }
         }
 
-        setIsDrawingWall(false);
-        setWallStart(null);
+        setIsDrawing(false);
+        setDrawStart(null);
+        setPreviewObject(null);
+      }
+    };
+
+    // Render preview object
+    const renderPreview = () => {
+      if (!previewObject) return null;
+
+      switch (previewObject.type) {
+        case 'wall':
+          return (
+            <Rect
+              x={previewObject.x}
+              y={previewObject.y}
+              width={previewObject.width}
+              height={previewObject.height}
+              fill="#9E9E9E"
+              opacity={0.6}
+              stroke="#A59386"
+              strokeWidth={2}
+              dash={[5, 5]}
+            />
+          );
+
+        case 'door':
+          return (
+            <Rect
+              x={previewObject.x}
+              y={previewObject.y}
+              width={previewObject.width}
+              height={previewObject.height}
+              fill="#8B4513"
+              opacity={0.6}
+              stroke="#A59386"
+              strokeWidth={2}
+              dash={[5, 5]}
+            />
+          );
+
+        case 'furniture':
+          return (
+            <Rect
+              x={previewObject.x}
+              y={previewObject.y}
+              width={previewObject.width}
+              height={previewObject.height}
+              fill="#8BC34A"
+              opacity={0.6}
+              stroke="#A59386"
+              strokeWidth={2}
+              dash={[5, 5]}
+              cornerRadius={5}
+            />
+          );
+
+        default:
+          return null;
       }
     };
 
@@ -301,10 +422,19 @@ export const CanvasStage = forwardRef<Konva.Stage, CanvasStageProps>(
                 onChange(obj.id, { x: e.target.x(), y: e.target.y() });
               }}
               onTransformEnd={(e) => {
+                const node = e.target;
+                const scaleX = node.scaleX();
+                const scaleY = node.scaleY();
+
+                node.scaleX(1);
+                node.scaleY(1);
+
                 onChange(obj.id, {
-                  x: e.target.x(),
-                  y: e.target.y(),
-                  rotation: e.target.rotation(),
+                  x: node.x(),
+                  y: node.y(),
+                  width: Math.max(5, obj.width * scaleX),
+                  height: Math.max(5, obj.height * scaleY),
+                  rotation: node.rotation(),
                 });
               }}
             >
@@ -421,6 +551,10 @@ export const CanvasStage = forwardRef<Konva.Stage, CanvasStageProps>(
       }
     };
 
+    // Calculate grid dimensions based on viewport
+    const gridWidth = Math.max(dimensions.width * 3, 5000);
+    const gridHeight = Math.max(dimensions.height * 3, 5000);
+
     return (
       <div ref={containerRef} className="canvas-container" style={{ width: '100%', height: '100%' }}>
         <Stage
@@ -436,17 +570,16 @@ export const CanvasStage = forwardRef<Konva.Stage, CanvasStageProps>(
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
         >
+          {/* Grid layer */}
+          <GridLayer width={gridWidth} height={gridHeight} grid={grid} />
+
+          {/* Objects layer */}
           <Layer>
             {objects.map(renderObject)}
+            {renderPreview()}
             {tool === 'select' && <Transformer ref={transformerRef} />}
           </Layer>
         </Stage>
-
-        {/* Scale bar */}
-        <div className="scale-bar">
-          <div>10 units</div>
-          <div className="scale-bar-line" />
-        </div>
       </div>
     );
   }
